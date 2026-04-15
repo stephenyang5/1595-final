@@ -1,0 +1,14 @@
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+checkpoints/
+logs/
+results/
+readings/
+cohort.csv
+features_hourly_prelocf.csv
+features_hourly.csv
+raw_features_extracted.csv
