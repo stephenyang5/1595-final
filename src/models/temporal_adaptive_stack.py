@@ -104,13 +104,24 @@ class TemporalAdaptiveGNNStack(nn.Module):
         key_padding = valid < 0.5
         key_padding_flat = key_padding.reshape(b * v, p)
 
+        # PyTorch TransformerEncoder produces NaN when ALL positions are masked.
+        # Pre-compute a safe mask that unmasks one token for those rows.
+        all_masked = key_padding_flat.all(dim=-1)          # (B*V,) bool
+        if all_masked.any():
+            safe_kp = key_padding_flat.clone()
+            safe_kp[all_masked, 0] = False                 # unmask first token as anchor
+        else:
+            safe_kp = key_padding_flat
+
         for layer in range(self.n_layer):
             if layer > 0:
                 x_last = x.clone()
 
             xv = x.reshape(b * v, p, d)
             xv = self.add_pe(xv)
-            xv = self.transformer_encoder[layer](xv, src_key_padding_mask=key_padding_flat)
+            xv = self.transformer_encoder[layer](xv, src_key_padding_mask=safe_kp)
+            if all_masked.any():
+                xv[all_masked] = 0.0
             x = xv.view(b, v, p, d)
 
             nv1 = self.nodevec1.view(1, 1, v, self.node_dim).expand(b, p, v, self.node_dim)

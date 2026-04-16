@@ -37,7 +37,7 @@ class TTCN(nn.Module):
         n, lx, _ = mask_x.shape
         filt = self.filter_generators(x_int)
         filt_mask = filt * mask_x + (1.0 - mask_x) * (-1e8)
-        filt_seqnorm = F.softmax(filt_mask, dim=-2)
+        filt_seqnorm = F.softmax(filt_mask.clamp(min=-80.0), dim=-2)
         filt_seqnorm = filt_seqnorm.view(n, lx, self.ttcn_dim, -1)
         x_broad = x_int.unsqueeze(-2).expand(-1, -1, self.ttcn_dim, -1)
         ttcn_out = torch.sum(torch.sum(x_broad * filt_seqnorm, dim=-3), dim=-1)
